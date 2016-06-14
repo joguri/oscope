@@ -9,7 +9,7 @@ class Oscilloscope {
   int screenWidth = 880;
   int screenHeight = 480;
   SerialConnection port = null;
-  boolean demoMode=false;
+  boolean demoMode=true;
   Button[] buttons;
   Label msg = new Label("Waiting for input ...", 30, 30, 300, 20);
   int stop;
@@ -19,17 +19,17 @@ class Oscilloscope {
   Oscilloscope(SerialConnection port) {
     this.port = port;
     bgImage = loadImage("OscilloscopeBackground.png");
-    values = new int[880];
+    values = new int[500];
   }
 
   int[] getValue() { //<>//
     int val = 0;
     int incr = 3;
-    for (int i=0; i<880; ++i) {
-      if (val > 1023) {
-        incr = -4;
-      } else {
-        incr = 3;
+    for (int i=0; i<500; ++i) {
+      if (val > 940) {
+        incr = -6;
+      } else if (val < 370) {
+        incr = 8;
       }
       val += incr;
       
@@ -168,6 +168,10 @@ class Oscilloscope {
       return;
     }
     drawLine(values);
+    
+    if (demoMode) {
+      return;
+    }
 
     if (stop == 1 && active == false) {
       return;
