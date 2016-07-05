@@ -1,21 +1,25 @@
 import processing.serial.*;
 
 class SerialConnection {
-  String name;
+  String name = null;
   Serial port;
   int defaultWaitTime = 10000;
   PApplet parent;
+  String[] list;
 
-  SerialConnection(PApplet parent, String name) {
-    this.name = name;
-    this.parent = parent;
+  SerialConnection(PApplet parent) {
+    this.name = null; //<>//
+    this.parent = parent; //<>//
+    this.port = null;
+    this.list = Serial.list();
   }
 
-  boolean openPort() {
+  boolean openPort(String portName) {
     try {
-      this.port = new Serial(this.parent, this.name, 115200);
+      this.port = new Serial(this.parent, portName, 115200);
       if (this.port != null) {
         this.port.clear();
+        this.name = portName;
       }
       return true;
     } 
@@ -23,9 +27,14 @@ class SerialConnection {
       return false;
     }
   }
+  
+  String[] getPorts() {
+    return this.list;
+  }
+  
 
   void writeInt(int value) {
-    this.port.write(value>>8); //<>//
+    this.port.write(value>>8);
     this.port.write(value);
   }
 
@@ -63,14 +72,14 @@ class SerialConnection {
     int retval = (val1 << 8) | val2;
     return retval;
   }
-  
+
   boolean checkAckLog() {
     boolean retval = false;
     if (checkAck()) {
       debugPrintln(2, "Command OK");
       retval = true;
     } else {
-      debugPrintln(2, "** Test Failed");
+      debugPrintln(2, "** Ack Failed");
     }
     return retval;
   }
@@ -83,5 +92,11 @@ class SerialConnection {
     } else {
       return false;
     }
+  }
+
+  void startCmd(int cmd)
+  {
+    this.writeInt(1234);
+    this.writeInt(cmd);
   }
 }

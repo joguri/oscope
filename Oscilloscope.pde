@@ -1,4 +1,4 @@
-
+//<>// //<>// //<>//
 class Oscilloscope {
 
   PImage bgImage;
@@ -19,21 +19,90 @@ class Oscilloscope {
   Oscilloscope(SerialConnection port) {
     this.port = port;
     bgImage = loadImage("OscilloscopeBackground.png");
-    values = new int[500];
   }
 
-  int[] getValue() { //<>//
-    int val = 0;
-    int incr = 3;
-    for (int i=0; i<500; ++i) {
-      if (val > 940) {
-        incr = -6;
-      } else if (val < 370) {
-        incr = 8;
+  void draw()
+  {
+    background(bgImage);
+    drawGrid();
+
+    if (port == null && !demoMode) {
+      drawButtons();
+      return;
+    }
+
+    values = getValues();
+    if (values.length < 1) {
+      return;
+    }
+    drawLine(values);
+
+    if (demoMode) {
+      return;
+    }
+
+    if (stop == 1 && active == false) {
+      return;
+    }
+
+    if (active == false) {
+      port.writeInt(1234);
+      port.writeInt(30);
+      active = true;
+    }
+
+    int[] results = getValues();
+    if (results == null) {
+      msg.Draw();
+      return;
+    }
+
+    boolean ack = port.checkAck();
+    if (ack) {
+      values = results;
+    }
+    active = false;
+  }
+
+  boolean promptForPorts()
+  {
+    String[] ports = port.getPorts();
+    boolean ok = false;
+    if (ports.length == 0) {
+      print("ERROR: NO .PORTS AVAILABLE");
+    } else if (ports.length == 1) {
+      ok = this.port.openPort(ports[0]);
+    } else {
+      buttons = new Button[ports.length+1];
+      for (int i=0; i<ports.length; ++i) {
+        println("    [" + nf(i) + "]: " + ports[i]);
+        buttons[i] = new Button(ports[i], 20, (i*25)+30, 250, 20);
       }
-      val += incr;
-      
-      values[i] = val;
+      int indx = ports.length;
+      buttons[indx] = new Button("Demo Mode", 20, (indx*25)+30, 250, 20);
+    }
+    return ok;
+  }
+
+  int[] getValues() 
+  {
+    port.startCmd(30);
+    values = new int[sampleSize];
+
+    for (int i=0; i<sampleSize; ++i) {
+      values[i] = port.readInt();
+      if (values[1] == -1) {
+        print('x');
+      } else {
+        if (i %20 == 0) {
+          print('.');
+        }
+      }
+    }
+    boolean ack = port.checkAckLog();
+    if (!ack) {
+      debugPrintln(2, "Ack Failed, resetting serial port");
+      port.clear();
     }
     return values;
   }
@@ -95,10 +164,10 @@ class Oscilloscope {
   }
 
   void drawLine(int[] valuesx) {
-    stroke(255); //<>//
+    stroke(255);
 
     int displayWidth = (int) (screenWidth / zoom);
-    
+
     int vLen = valuesx.length;
     int k = 0;
     if (vLen > displayWidth) {
@@ -106,11 +175,11 @@ class Oscilloscope {
     } else {
       k = vLen;
     }
-    
+
     if (k < 1) {
       return;
     }
-    
+
     int x0 = 0;
     int y0 = getY(valuesx[0]);
     for (int i=1; i<k; i++) {
@@ -131,7 +200,8 @@ class Oscilloscope {
     }
 
     if (demoMode) {
-      values = getValue();
+      int foo[]  =  {1, 2, 3, 4, 5, 6, 7}; // getValue();
+      values = foo;
       drawLine(values);
     }
 
@@ -147,52 +217,10 @@ class Oscilloscope {
       active = true;
     }
 
-    int[] results = getValue();
+    int[] results = getValues();
     if (results == null) {
       msg.Draw();
       return;
     }
-  }
-  
-  void draw()
-  {
-    background(bgImage); //<>//
-    drawGrid();
-    if (port == null && !demoMode) {
-      drawButtons();
-      return;
-    }
-
-    values = getValue();
-    if (values.length < 1) {
-      return;
-    }
-    drawLine(values);
-    
-    if (demoMode) {
-      return;
-    }
-
-    if (stop == 1 && active == false) {
-      return;
-    }
-
-    if (active == false) {
-      port.writeInt(1234);
-      port.writeInt(30);
-      active = true;
-    }
-
-    int[] results = getValue();
-    if (results == null) {
-      msg.Draw();
-      return;
-    }
-
-    boolean ack = port.checkAck();
-    if (ack) {
-      values = results;
-    }
-    active = false;
   }
 }
