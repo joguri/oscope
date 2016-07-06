@@ -9,59 +9,60 @@ class Oscilloscope {
   int screenWidth = 880;
   int screenHeight = 480;
   SerialConnection port = null;
-  boolean demoMode=true;
+  boolean demoMode=false;
   Button[] buttons;
   Label msg = new Label("Waiting for input ...", 30, 30, 300, 20);
-  int stop;
+  boolean stop = false;
   boolean active = false;
   int[] values;
+  int valueIndex = 0;
+  boolean continuousMode = false;
+  boolean appendMode = false;
+
 
   Oscilloscope(SerialConnection port) {
     this.port = port;
+    this.stop = false;
     bgImage = loadImage("OscilloscopeBackground.png");
+    this.values = new int[880];
   }
-
+  
   void draw()
   {
-    background(bgImage);
+    background(bgImage); //<>//
     drawGrid();
 
-    if (port == null && !demoMode) {
+    if (port.isConnected == false && demoMode == false) { //<>//
       drawButtons();
       return;
     }
-
+    
+    if (stop == true && active == false) {
+      return;
+    }
+    
+    debugPrint(2,"1. Getting values, ");
     values = getValues();
     if (values.length < 1) {
       return;
     }
+    
+    debugPrint(2,"2. drawing lines,   ");
     drawLine(values);
 
     if (demoMode) {
       return;
     }
 
-    if (stop == 1 && active == false) {
-      return;
-    }
-
-    if (active == false) {
-      port.writeInt(1234);
-      port.writeInt(30);
-      active = true;
-    }
-
-    int[] results = getValues();
-    if (results == null) {
-      msg.Draw();
-      return;
-    }
-
-    boolean ack = port.checkAck();
-    if (ack) {
-      values = results;
-    }
     active = false;
+    debugPrint(2,"6. DONE! \n");
+  }
+  
+  void setContinuousMode(boolean continuous)
+  {
+    this.valueIndex = 0;
+    this.appendMode = false;
+    this.continuousMode = continuous;
   }
 
   boolean promptForPorts()
@@ -86,25 +87,57 @@ class Oscilloscope {
 
   int[] getValues() 
   {
-    port.startCmd(30);
-    values = new int[sampleSize];
-
-    for (int i=0; i<sampleSize; ++i) {
-      values[i] = port.readInt();
-      if (values[1] == -1) {
-        print('x');
-      } else {
-        if (i %20 == 0) {
-          print('.');
+    if (valueIndex == 0) {
+      port.startCmd(30);
+    }
+    
+    if (continuousMode == true) {
+        int avail = port.getAvailable()-1;
+        if (appendMode) {
+          for (int i=avail; i<sampleSize; ++i) {
+            this.values[i-avail] = this.values[i];
+          }
+          for (int i=0; i<avail; ++i) {
+              port.readInt();
+              this.values[sampleSize-avail+i] = port.readInt();
+          }
+        } else {
+          for (int i=0; i<avail; ++i) {
+            if (valueIndex+i >= 880) {
+              break;
+            }
+            this.values[valueIndex+i] = port.readInt();
+            valueIndex += 1;
+            debugPrint(2, "valueIndex: "+valueIndex);
+          }
+        }
+    } else {
+      for (int i=0; i<sampleSize; ++i) {
+        this.values[i] = port.readInt();
+        if (this.values[1] == -1) {
+          print('x');
+        } else {
+          if (i %20 == 0) {
+            print('.');
+          }
         }
       }
+      valueIndex += sampleSize;
     }
-    boolean ack = port.checkAckLog();
-    if (!ack) {
-      debugPrintln(2, "Ack Failed, resetting serial port");
-      port.clear();
+    
+    if (valueIndex == sampleSize) {
+      boolean ack = port.checkAckLog();
+      valueIndex = 0;
+      if (!ack) {
+        debugPrintln(2, "Ack Failed, resetting serial port");
+        port.clear();
+      }
+      if (continuousMode) {
+        debugPrintln(2, "Append Mode activated");
+        appendMode = true;
+      }
     }
-    return values;
+    return this.values;
   }
 
   void offLine(int x0, int y0, int x1, int y1) 
@@ -169,6 +202,15 @@ class Oscilloscope {
     int displayWidth = (int) (screenWidth / zoom);
 
     int vLen = valuesx.length;
+    if (continuousMode) {
+      if (valueIndex == 0) {
+        vLen = 880; //<>//
+        debugPrint(2, "Value: "+valueIndex);
+      } else {
+        vLen = valueIndex; //<>//
+        debugPrintln(2, "Value: "+valueIndex);
+      }
+    }
     int k = 0;
     if (vLen > displayWidth) {
       k = displayWidth;
@@ -191,36 +233,27 @@ class Oscilloscope {
     }
   }
 
-  void scopeDraw() {
-    background(bgImage);
-    drawGrid();
-    if (port == null && !demoMode) {
-      drawButtons();
-      return;
-    }
-
-    if (demoMode) {
-      int foo[]  =  {1, 2, 3, 4, 5, 6, 7}; // getValue();
-      values = foo;
-      drawLine(values);
-    }
-
-    drawLine(values);
-
-    if (stop == 1 && active == false) {
-      return;
-    }
-
-    if (active == false) {
-      port.writeInt(1234);
-      port.writeInt(30);
-      active = true;
-    }
-
-    int[] results = getValues();
-    if (results == null) {
-      msg.Draw();
-      return;
+  
+  // mouse button clicked
+  void mousePressed()
+  {
+    String portName; //<>//
+    for (int i=0; i<this.buttons.length; ++i) {
+      if (this.buttons[i].MouseIsOver()) {
+        // print some text to the console pane if the button is clicked
+        portName = this.buttons[i].label;
+        if (portName == "Demo Mode") {
+          demoMode = true;
+          return;
+        }
+        boolean ok = this.port.openPort(portName);
+        if (!ok) {
+          println("\nBroken Port");
+        } else {
+          println("Port is now open");
+        }
+      }
     }
   }
+  
 }

@@ -6,6 +6,7 @@ class SerialConnection {
   int defaultWaitTime = 10000;
   PApplet parent;
   String[] list;
+  boolean isConnected = false;
 
   SerialConnection(PApplet parent) {
     this.name = null; //<>//
@@ -20,6 +21,8 @@ class SerialConnection {
       if (this.port != null) {
         this.port.clear();
         this.name = portName;
+//        delay(4000);
+        this.isConnected = true;
       }
       return true;
     } 
@@ -28,13 +31,17 @@ class SerialConnection {
     }
   }
   
+  int getAvailable() {
+    return this.port.available()/2;
+  }
+  
   String[] getPorts() {
     return this.list;
   }
   
 
   void writeInt(int value) {
-    this.port.write(value>>8);
+    this.port.write(value>>8); //<>//
     this.port.write(value);
   }
 

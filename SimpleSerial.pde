@@ -8,32 +8,22 @@ int[] values;
 SerialConnection port;
 Oscilloscope scope;
 boolean stop = true;
+int[] periods;
+int periodIndex = 5;
 
 void setup()
 {
-  port = new SerialConnection(this); //<>//
-  /**
-  boolean ok = port.openPort("/dev/cu.wchusbserial1420");
-  if (!ok) {
-    debugPrintln(2, "Port failed to open");
-    exit();
-  } else {
-    debugPrintln(2, "PORT CONNECTED");
-  }
-  **/
+  port = new SerialConnection(this);
   size(1200, 540);
   scope = new Oscilloscope(port);
   scope.promptForPorts();
   
   sampleSize = 880;
   triggerValue = 222;
-  samplePeriod = 5000;
   signalPin = 1;
-  
-  debugPrint(2,"Warming up...");
-  delay(4000);
-  debugPrint(2,"Scope Running");
-  stop = true;
+  stop = false;
+  periods = new int[] { 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000 };
+  samplePeriod = periods[periodIndex];
 }
 
 void readConfig()
@@ -59,11 +49,17 @@ void writeConfig()
   port.writeInt(samplePeriod);
   port.writeInt(signalPin);
   
+  if (samplePeriod > 5000) {
+    scope.setContinuousMode(true);
+  } else {
+    scope.setContinuousMode(false);
+  }
+  
   port.checkAckLog();
 }
 
 
-void readConfig() 
+void sampleData() 
 {
   port.startCmd(30);
   
@@ -82,7 +78,7 @@ void readConfig()
 
 void keyReleased()
 {
-  switch (key) { //<>//
+  switch (key) {
     case 's':
       debugPrintln(2, "Stopping");
       stop = true;
@@ -96,12 +92,12 @@ void keyReleased()
       port.clear();
       break;
     case '1':
-      debugPrintln(2, "Test Command 1");
+      debugPrintln(2, "Read Configuration from Arduino");
       readConfig();
       break;
     case '2':
-      debugPrintln(2, "Test Command 2");
-      readConfig();
+      debugPrintln(2, "Sample Data");
+      sampleData();
       debugPrintln(2, "Dumping values:");
       String res = "";
       for (int i=0; i<880; ++i) {
@@ -115,17 +111,32 @@ void keyReleased()
       break;
     case '-':
       debugPrintln(2, "Test Command 3");
-      samplePeriod = samplePeriod/10;
+      if (periodIndex > 0) {
+        periodIndex -= 1;
+      }
+      samplePeriod = periods[periodIndex];
       writeConfig();
       debugPrintln(2, "Set Sample Period to " + samplePeriod);
       break;
     case '+':
       debugPrintln(2, "Test Command 3");
-      samplePeriod = samplePeriod * 10;
+      if (periodIndex < 11) {
+        periodIndex += 1;
+      }
+      samplePeriod = periods[periodIndex];
       writeConfig();
       debugPrintln(2, "Set Sample Period to " + samplePeriod);
       break;
   } 
+}
+
+void mousePressed()
+{
+  scope.mousePressed();
+  debugPrint(2, "Initializing Configuration");
+  delay(2000);
+  writeConfig();
+  debugPrint(2, "done");
 }
 
 void draw()
