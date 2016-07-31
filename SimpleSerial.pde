@@ -9,7 +9,7 @@ SerialConnection port;
 Oscilloscope scope;
 boolean stop = true;
 int[] periods;
-int periodIndex = 5;
+int periodIndex = 3;
 
 void setup()
 {
@@ -37,7 +37,7 @@ void readConfig()
   
   port.checkAckLog();
   
-  debugPrintln(2, "Test Response: " + values[0] + ", " + values[1] + ", " + values[2] + ", " + values[3]);
+  debugPrintln(4, "Test Response: " + values[0] + ", " + values[1] + ", " + values[2] + ", " + values[3]);
 }
 
 void writeConfig() 
@@ -68,9 +68,9 @@ void sampleData()
   for (int i=0; i<sampleSize; ++i) {
     values[i] = port.readInt();
     if (values[1] == -1) {
-      print('x');
+      debugPrint(1, "x");
     } else {
-      print('.');
+      debugPrint(4, ".");
     }
   }
   port.checkAckLog();
@@ -80,52 +80,52 @@ void keyReleased()
 {
   switch (key) {
     case 's':
-      debugPrintln(2, "Stopping");
+      debugPrintln(4, "Stopping");
       stop = true;
       break;
     case 'r':
-      debugPrintln(2, "Starting");
+      debugPrintln(4, "Starting");
       stop = false;
       break;
     case 'x':
-      debugPrintln(2, "Syncing");
+      debugPrintln(4, "Syncing");
       port.clear();
       break;
     case '1':
-      debugPrintln(2, "Read Configuration from Arduino");
+      debugPrintln(4, "Read Configuration from Arduino");
       readConfig();
       break;
     case '2':
-      debugPrintln(2, "Sample Data");
+      debugPrintln(4, "Sample Data");
       sampleData();
-      debugPrintln(2, "Dumping values:");
+      debugPrintln(4, "Dumping values:");
       String res = "";
       for (int i=0; i<880; ++i) {
         res += values[i] + ", ";
       }
-      debugPrintln(2, res);
+      debugPrintln(4, res);
       break;
     case '3':
-      debugPrintln(2, "Writing Config to Arduino");
+      debugPrintln(4, "Writing Config to Arduino");
       writeConfig();
       break;
     case '-':
-      debugPrintln(2, "Test Command 3");
+      debugPrintln(4, "Test Command 3");
       if (periodIndex > 0) {
         periodIndex -= 1;
       }
       samplePeriod = periods[periodIndex];
       writeConfig();
-      debugPrintln(2, "Set Sample Period to " + samplePeriod);
+      debugPrintln(4, "Set Sample Period to " + samplePeriod);
       break;
     case '+':
-      debugPrintln(2, "Test Command 3");
-      if (periodIndex < 11) {
+      debugPrintln(4, "Test Command 3");
+      if (periodIndex < periods.length-1) {
         periodIndex += 1;
       }
       samplePeriod = periods[periodIndex];
       writeConfig();
-      debugPrintln(2, "Set Sample Period to " + samplePeriod);
+      debugPrintln(4, "Set Sample Period to " + samplePeriod);
       break;
   } 
 }
@@ -133,10 +133,10 @@ void keyReleased()
 void mousePressed()
 {
   scope.mousePressed();
-  debugPrint(2, "Initializing Configuration");
+  debugPrint(4, "Initializing Configuration");
   delay(2000);
   writeConfig();
-  debugPrint(2, "done");
+  debugPrint(4, "done");
 }
 
 void draw()

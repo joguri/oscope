@@ -1,4 +1,4 @@
-int debug = 5;
+int debug = 3;
 
 void debugPrint(int priority, String msg) {
   if (debug >= priority) {

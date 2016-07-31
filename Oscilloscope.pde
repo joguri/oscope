@@ -41,13 +41,13 @@ class Oscilloscope {
       return;
     }
     
-    debugPrint(2,"1. Getting values, ");
+    debugPrint(4,"1. Getting values, ");
     values = getValues();
     if (values.length < 1) {
       return;
     }
     
-    debugPrint(2,"2. drawing lines,   ");
+    debugPrint(4,"2. drawing lines,   ");
     drawLine(values);
 
     if (demoMode) {
@@ -55,7 +55,7 @@ class Oscilloscope {
     }
 
     active = false;
-    debugPrint(2,"6. DONE! \n");
+    debugPrint(4,"6. DONE! \n");
   }
   
   void setContinuousMode(boolean continuous)
@@ -108,17 +108,17 @@ class Oscilloscope {
             }
             this.values[valueIndex+i] = port.readInt();
             valueIndex += 1;
-            debugPrint(2, "valueIndex: "+valueIndex);
+            debugPrint(4, "valueIndex: "+valueIndex);
           }
         }
     } else {
       for (int i=0; i<sampleSize; ++i) {
         this.values[i] = port.readInt();
         if (this.values[1] == -1) {
-          print('x');
+          debugPrint(1, "x");
         } else {
           if (i %20 == 0) {
-            print('.');
+            debugPrint(4, ".");
           }
         }
       }
@@ -129,11 +129,11 @@ class Oscilloscope {
       boolean ack = port.checkAckLog();
       valueIndex = 0;
       if (!ack) {
-        debugPrintln(2, "Ack Failed, resetting serial port");
+        debugPrint(4, "Ack Failed, resetting serial port");
         port.clear();
       }
       if (continuousMode) {
-        debugPrintln(2, "Append Mode activated");
+        debugPrint(4, "Append Mode activated");
         appendMode = true;
       }
     }
@@ -205,10 +205,10 @@ class Oscilloscope {
     if (continuousMode) {
       if (valueIndex == 0) {
         vLen = 880; //<>//
-        debugPrint(2, "Value: "+valueIndex);
+        debugPrint(4, "Value: "+valueIndex);
       } else {
         vLen = valueIndex; //<>//
-        debugPrintln(2, "Value: "+valueIndex);
+        debugPrint(4, "Value: "+valueIndex);
       }
     }
     int k = 0;
@@ -250,7 +250,7 @@ class Oscilloscope {
         if (!ok) {
           println("\nBroken Port");
         } else {
-          println("Port is now open");
+          debugPrint(4, "Port is now open");
         }
       }
     }
